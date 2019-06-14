@@ -64,6 +64,7 @@ AppAsset::register($this);
 </footer>
 
 <?php $this->endBody() ?>
+<?= $this->blocks['script'] ?>
 </body>
 </html>
 <?php $this->endPage() ?>
