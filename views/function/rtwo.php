@@ -5,13 +5,14 @@ use yii\helpers\Html;
 use yii\helpers\Url;
 
 /* @var array $links */
-$this->title = 'Results';
+$this->title = 'Results Two';
 ?>
 
-    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true" data-main-id="<?= $id ?>">
         <?php foreach ($links as $key => $link): ?>
 
-            <div class="panel panel-default" id="<?= $key ?>" data-url="<?= $link ?>" data-id="<?= $key ?>">
+            <div class="panel panel-default" id="<?= $key ?>" data-url="<?= $link->url ?>"
+                 data-key="<?= $link->key ?>" data-link="<?= $link->link ?>" data-id="<?= $key ?>">
                 <div class="panel-heading" role="tab" id="headingOne<?= $key ?>">
                     <div class="row">
                         <div class="col-md-10">
@@ -19,7 +20,7 @@ $this->title = 'Results';
                                 <a role="button" data-toggle="collapse" data-parent="#accordion"
                                    href="#collapseOne<?= $key ?>"
                                    aria-expanded="true" aria-controls="collapseOne">
-                                    <?= Html::encode($link) ?>
+                                    <?= Html::encode($link->url) ?>
                                 </a>
                             </h4>
                         </div>
@@ -38,6 +39,13 @@ $this->title = 'Results';
                 <div id="collapseOne<?= $key ?>" class="panel-collapse collapse" role="tabpanel"
                      aria-labelledby="headingOne<?= $key ?>">
                     <div class="panel-body">
+
+                        <ul>
+                            <?php foreach ((array)$link as $n => $item): ?>
+                                <li><?= $n ?> - <?= $item ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+
                         <ul class="results"></ul>
                     </div>
                 </div>
@@ -50,35 +58,42 @@ $this->title = 'Results';
     <script>
         $('div.panel-default').each(function (index, value) {
             var url = $(this).data('url');
+            var key = $(this).data('key');
+            var link = $(this).data('link');
             var id = $(this).data('id');
-            process(id, url);
+
+            //console.log(key);
+
+
+            process(url, key, link, id);
         });
 
-        function process(id, url) {
+        function process(url, key, link, id) {
 
             $.ajax({
-                url: '<?= Url::to(['process/one']) ?>',
+                url: '<?= Url::to(['process/two']) ?>',
                 dataType: 'json',
                 type: 'post',
                 contentType: 'application/x-www-form-urlencoded',
-                data: {url: url},
+                data: {url: url, link: link, key: key},
                 success: function (data, textStatus, jQxhr) {
                     $('#' + id).find('span.loading').hide();
 
                     console.log(data);
                     var results = '';
-                    if(data['status'] === 'ERROR'){
+                    if (data['status'] === 'ERROR') {
                         $('#' + id).find('span.error').show();
                         results = '<li> STATUS: ' + data['status'] + '</li>';
                         results = results + '<li>' + data['message'] + '</li>';
-                    }else{
+                    } else {
                         $('#' + id).find('span.success').show();
+                        console.log('eee');
                         $.each(data['results'], function (index, value) {
                             results = results + '<li>' + index + ': ' + value + '</li>';
                         });
                     }
 
-                    $('#' + id).find('ul').append(results);
+                    $('#' + id).find('ul.results').append(results);
                 },
                 error: function (jqXhr, textStatus, errorThrown) {
                     console.log(errorThrown);

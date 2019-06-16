@@ -4,6 +4,9 @@
 namespace app\controllers;
 
 
+use app\models\Links;
+use Symfony\Component\DomCrawler\Crawler;
+use yii\db\Exception;
 use yii\httpclient\Client;
 use Yii;
 use yii\filters\VerbFilter;
@@ -35,8 +38,7 @@ class ProcessController extends Controller
      */
     public function actionOne()
     {
-        //   $this->enableCsrfValidation = false;
-
+        Yii::$app->response->format = Response::FORMAT_JSON;
         $request = Yii::$app->request;
 
         $url = $request->post('url');
@@ -47,29 +49,47 @@ class ProcessController extends Controller
             ->setMethod('GET')
             ->setUrl($url);
 
+        try {
+            $data = $request->send();
+        } catch (\yii\httpclient\Exception $exception) {
+            return [
+                'status' => 'ERROR',
+                'message' => $exception->getMessage()
+            ];
+        }
 
-        $data = $request->send();
 
         if ($data->isOK) {
             $results = [
                 'status' => 'SUCCESS',
                 'results' => [
                     'status' => $data->getStatusCode(),
-                  //  'headres' => $data->getHeaders(),
+                    //  'headres' => $data->getHeaders(),
                 ],
             ];
 
 
             $codes = [];
+
+            $header = $data->getHeaders()->toArray();
+
             //echo "<pre>";
-            //die(var_dump($data->getHeaders()["http-code"]));
+            //die(var_dump($header));
 
+            foreach ($header["http-code"] as $code) {
+                $codes[] = $code;
+            }
 
-                foreach ($data->getHeaders() as $code){
-                    $codes[] = $code;
+            $results['results']['codes'] = $codes;
+
+            if (isset($header['location'])) {
+                $locations = [];
+                foreach ($header["location"] as $location) {
+                    $locations[] = $location;
                 }
 
-                $results['results']['codes'] = $codes;
+                $results['results']['locations'] = $locations;
+            }
 
         } else {
             $results = [
@@ -78,7 +98,97 @@ class ProcessController extends Controller
             ];
         }
 
+
+        return $results;
+    }
+
+    /**
+     * @return array
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\httpclient\Exception
+     */
+    public function actionTwo()
+    {
         Yii::$app->response->format = Response::FORMAT_JSON;
+        $request = Yii::$app->request;
+
+        $url = $request->post('url');
+        $key = $request->post('key');
+        $link = $request->post('link');
+
+        $client = new Client();
+
+        $request = $client->createRequest()
+            ->setMethod('GET')
+            ->setUrl(trim($url));
+
+        try {
+            $data = $request->send();
+        } catch (\yii\httpclient\Exception $exception) {
+            return [
+                'status' => 'ERROR',
+                'message' => $exception->getMessage() . 'URL: ' . $url,
+            ];
+        }
+
+
+        if ($data->isOK) {
+            $results = [
+                'status' => 'SUCCESS',
+                'results' => [
+                    'status' => $data->getStatusCode(),
+                ],
+            ];
+
+            $codes = [];
+
+            $header = $data->getHeaders()->toArray();
+
+            foreach ($header["http-code"] as $code) {
+                $codes[] = $code;
+            }
+
+            $results['results']['codes'] = $codes;
+
+            if (isset($header['location'])) {
+                $locations = [];
+                foreach ($header["location"] as $location) {
+                    $locations[] = $location;
+                }
+
+                $results['results']['locations'] = $locations;
+            }
+
+            //key link
+            $crawler = new Crawler($data->content);
+
+            $a = $crawler
+                ->filterXpath("//a[contains(@href,'" . trim($link) . "')]");
+
+            // die(var_dump(strtolower($a->text()) . ' '. strtolower($link['key'])));
+            $key = strtolower($key);
+            $text = strtolower($a->text());
+
+            if (preg_match("/{$key}/i", $text)) {
+                $results['results']['key'] = 'was found - ' . $key;
+            } else {
+                $results['results']['key'] = 'was not found - ' . $key;
+            }
+
+
+            if ($a->extract('nofollow')[0]) {
+                $results['results']['nofollow'] = true;
+            } else {
+                $results['results']['nofollow'] = false;
+            }
+
+        } else {
+            $results = [
+                'status' => 'ERROR',
+                'message' => $data->content
+            ];
+        }
+
         return $results;
     }
 
@@ -87,7 +197,7 @@ class ProcessController extends Controller
      */
     public function beforeAction($action)
     {
-        if ($action->id == 'one') {
+        if (in_array($action->id, ['one', 'two', 'three'])) {
             $this->enableCsrfValidation = false;
         }
 

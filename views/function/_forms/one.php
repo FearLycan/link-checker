@@ -15,7 +15,7 @@ use yii\widgets\Pjax;
         <?php $form = ActiveForm::begin(); ?>
 
         <div class="col-md-12">
-            <?= $form->field($model, 'links')->textarea(['rows' => '6']) ?>
+            <?= $form->field($model, 'links')->textarea(['rows' => '6', 'id'=>'textarea'])->hint('Links with http or https') ?>
         </div>
 
         <div class="col-md-12">
