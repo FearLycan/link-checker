@@ -5,14 +5,20 @@ use yii\helpers\Html;
 use yii\helpers\Url;
 
 /* @var array $links */
-$this->title = 'Results Two';
+$this->title = 'Results Three';
 ?>
 
-    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true" data-main-id="<?= $id ?>">
+<style>
+    .glyphicon-refresh:hover{
+        cursor: pointer;
+    }
+</style>
+
+    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
         <?php foreach ($links as $key => $link): ?>
 
             <div class="panel panel-default" id="<?= $key ?>" data-url="<?= $link->url ?>"
-                 data-key="<?= $link->key ?>" data-link="<?= $link->link ?>" data-id="<?= $key ?>">
+                 data-link="<?= $link->link ?>" data-id="<?= $key ?>">
                 <div class="panel-heading" role="tab" id="headingOne<?= $key ?>">
                     <div class="row">
                         <div class="col-md-10">
@@ -62,21 +68,20 @@ $this->title = 'Results Two';
     <script>
         $('div.panel-default').each(function (index, value) {
             var url = $(this).data('url');
-            var key = $(this).data('key');
             var link = $(this).data('link');
             var id = $(this).data('id');
 
-            process(url, key, link, id);
+            process(url, link, id);
         });
 
-        function process(url, key, link, id) {
+        function process(url, link, id) {
 
             $.ajax({
-                url: '<?= Url::to(['process/two']) ?>',
+                url: '<?= Url::to(['process/three']) ?>',
                 dataType: 'json',
                 type: 'post',
                 contentType: 'application/x-www-form-urlencoded',
-                data: {url: url, link: link, key: key},
+                data: {url: url, link: link},
                 success: function (data, textStatus, jQxhr) {
                     $('#' + id).find('span.loading').hide();
 
@@ -88,7 +93,7 @@ $this->title = 'Results Two';
                         results = results + '<li>' + data['message'] + '</li>';
                     } else {
                         $('#' + id).find('span.success').show();
-                        console.log('eee');
+
                         $.each(data['results'], function (index, value) {
                             results = results + '<li>' + index + ': ' + value + '</li>';
                         });
@@ -106,7 +111,6 @@ $this->title = 'Results Two';
         $( ".glyphicon-refresh" ).click(function() {
             var id = $(this).data('id');
             var url = $('#'+id).data('url');
-            var key = $('#'+id).data('key');
             var link = $('#'+id).data('link');
 
             $('#' + id).find('ul.results li').remove();
@@ -115,7 +119,9 @@ $this->title = 'Results Two';
             $('#' + id).find('span.error').hide();
             $('#' + id).find('span.success').hide();
 
-            process(url, key, link, id);
+            process(url, link, id);
         });
+
+
     </script>
 <?php $this->endBlock() ?>

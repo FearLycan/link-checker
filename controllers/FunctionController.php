@@ -5,6 +5,7 @@ namespace app\controllers;
 
 
 use app\models\forms\OneForm;
+use app\models\forms\ThreeForm;
 use app\models\forms\TwoForm;
 use app\models\Links;
 use Yii;
@@ -52,6 +53,18 @@ class FunctionController extends Controller
         ]);
     }
 
+    public function actionResultThree($id)
+    {
+        $model = Links::findOne($id);
+
+        $links = json_decode($model->links);
+
+        return $this->render('rthree', [
+            'links' => $links,
+            'id' => $id
+        ]);
+    }
+
     public function actionTwo()
     {
         $model = new TwoForm();
@@ -71,6 +84,18 @@ class FunctionController extends Controller
 
     public function actionThree()
     {
-        return $this->render('three');
+        $model = new ThreeForm();
+
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+
+            $model->links = json_encode($model->extractLinks());
+            $model->save();
+
+            return $this->redirect(['result-three', 'id' => $model->id]);
+        }
+
+        return $this->render('three',[
+            'model' => $model
+        ]);
     }
 }

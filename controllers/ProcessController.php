@@ -64,17 +64,12 @@ class ProcessController extends Controller
                 'status' => 'SUCCESS',
                 'results' => [
                     'status' => $data->getStatusCode(),
-                    //  'headres' => $data->getHeaders(),
                 ],
             ];
-
 
             $codes = [];
 
             $header = $data->getHeaders()->toArray();
-
-            //echo "<pre>";
-            //die(var_dump($header));
 
             foreach ($header["http-code"] as $code) {
                 $codes[] = $code;
@@ -115,6 +110,13 @@ class ProcessController extends Controller
         $url = $request->post('url');
         $key = $request->post('key');
         $link = $request->post('link');
+
+
+        //[{"url":"https:\/\/getbootstrap.com\/docs\/3.4\/components\/","key":"CSS","link":"https:\/\/getbootstrap.com\/docs\/3.4\/css\/"}]
+
+        $url = 'https://getbootstrap.com/docs/3.4/components/';
+        $key = 'CSS';
+        $link = '/docs/3.4/css/';
 
         $client = new Client();
 
@@ -164,7 +166,7 @@ class ProcessController extends Controller
 
             $a = $crawler
                 ->filterXpath("//a[contains(@href,'" . trim($link) . "')]");
-
+           // die(var_dump("//a[contains(@href,'" . trim($link) . "')]"));
             // die(var_dump(strtolower($a->text()) . ' '. strtolower($link['key'])));
             $key = strtolower($key);
             $text = strtolower($a->text());
@@ -180,6 +182,85 @@ class ProcessController extends Controller
                 $results['results']['nofollow'] = true;
             } else {
                 $results['results']['nofollow'] = false;
+            }
+
+        } else {
+            $results = [
+                'status' => 'ERROR',
+                'message' => $data->content
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * @return array
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\httpclient\Exception
+     */
+    public function actionThree()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $request = Yii::$app->request;
+
+        $url = $request->post('url');
+        //$key = $request->post('key');
+        $link = $request->post('link');
+
+        $client = new Client();
+
+        $request = $client->createRequest()
+            ->setMethod('GET')
+            ->setUrl(trim($url));
+
+        try {
+            $data = $request->send();
+        } catch (\yii\httpclient\Exception $exception) {
+            return [
+                'status' => 'ERROR',
+                'message' => $exception->getMessage() . 'URL: ' . $url,
+            ];
+        }
+
+
+        if ($data->isOK) {
+            $results = [
+                'status' => 'SUCCESS',
+                'results' => [
+                    'status' => $data->getStatusCode(),
+                ],
+            ];
+
+            $codes = [];
+
+            $header = $data->getHeaders()->toArray();
+
+            foreach ($header["http-code"] as $code) {
+                $codes[] = $code;
+            }
+
+            $results['results']['codes'] = $codes;
+
+            if (isset($header['location'])) {
+                $locations = [];
+                foreach ($header["location"] as $location) {
+                    $locations[] = $location;
+                }
+
+                $results['results']['locations'] = $locations;
+            }
+
+            //link
+            $crawler = new Crawler($data->content);
+
+            $a = $crawler
+                ->filterXpath("//a[contains(@href,'" . trim($link) . "')]");
+
+            if(!empty($a->text())){
+                $results['results']['text'] = 'was found - ' . $a->text();
+            }else{
+                $results['results']['text'] = 'was not found';
             }
 
         } else {
