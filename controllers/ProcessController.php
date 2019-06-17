@@ -111,13 +111,6 @@ class ProcessController extends Controller
         $key = $request->post('key');
         $link = $request->post('link');
 
-
-        //[{"url":"https:\/\/getbootstrap.com\/docs\/3.4\/components\/","key":"CSS","link":"https:\/\/getbootstrap.com\/docs\/3.4\/css\/"}]
-
-        $url = 'https://getbootstrap.com/docs/3.4/components/';
-        $key = 'CSS';
-        $link = '/docs/3.4/css/';
-
         $client = new Client();
 
         $request = $client->createRequest()
@@ -164,24 +157,19 @@ class ProcessController extends Controller
             //key link
             $crawler = new Crawler($data->content);
 
-            $a = $crawler
-                ->filterXpath("//a[contains(@href,'" . trim($link) . "')]");
-           // die(var_dump("//a[contains(@href,'" . trim($link) . "')]"));
-            // die(var_dump(strtolower($a->text()) . ' '. strtolower($link['key'])));
-            $key = strtolower($key);
-            $text = strtolower($a->text());
+            $a = $crawler->filterXpath("//a[contains(@href,'" . trim($link) . "')]");
 
-            if (preg_match("/{$key}/i", $text)) {
-                $results['results']['key'] = 'was found - ' . $key;
-            } else {
-                $results['results']['key'] = 'was not found - ' . $key;
-            }
+            if($a->count()){
+                $key = strtolower($key);
+                $text = strtolower($a->text());
 
-
-            if ($a->extract('nofollow')[0]) {
-                $results['results']['nofollow'] = true;
-            } else {
-                $results['results']['nofollow'] = false;
+                if (preg_match("/{$key}/i", $text)) {
+                    $results['results']['key'] = 'was found - ' . $key;
+                } else {
+                    $results['results']['key'] = 'was not found - ' . $key;
+                }
+            }else{
+                $results['results']['key'] = 'No LINK on this page';
             }
 
         } else {
@@ -205,7 +193,6 @@ class ProcessController extends Controller
         $request = Yii::$app->request;
 
         $url = $request->post('url');
-        //$key = $request->post('key');
         $link = $request->post('link');
 
         $client = new Client();
@@ -257,7 +244,7 @@ class ProcessController extends Controller
             $a = $crawler
                 ->filterXpath("//a[contains(@href,'" . trim($link) . "')]");
 
-            if(!empty($a->text())){
+            if($a->count()){
                 $results['results']['text'] = 'was found - ' . $a->text();
             }else{
                 $results['results']['text'] = 'was not found';
